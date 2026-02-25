@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Computer Maintenance Scheduler</title>
+<link rel="manifest" href="/manifest.json">
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background: #f2f2f7;
+    min-height: 100vh;
+    padding: 20px;
+}
+.container {
+    background: white;
+    max-width: 500px;
+    margin: 0 auto;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+.header {
+    padding: 20px;
+    text-align: center;
+    border-bottom: 1px solid #e5e5ea;
+}
+.header h1 {
+    font-size: 24px;
+    color: #1c1c1e;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+.status-bar {
+    display: flex;
+    gap: 10px;
+    margin: 15px 20px;
+}
+.status-pill {
+    flex: 1;
+    padding: 8px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.status-active {
+    background: #e8f5e9;
+    color: #2e7d32;
+    border: 1px solid #a5d6a7;
+}
+.status-inactive {
+    background: #ffebee;
+    color: #c62828;
+    border: 1px solid #ef9a9a;
+}
+.status-pending {
+    background: #fff3e0;
+    color: #ef6c00;
+    border: 1px solid #ffcc80;
+}
+.enable-btn {
+    margin: 0 20px 20px;
+    width: calc(100% - 40px);
+    padding: 14px;
+    background: #007aff;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+.enable-btn:hover {
+    background: #0056b3;
+}
+.audio-toggle {
+    position: absolute;
+    top: 20px;
+    right: 20px;
+    background: white;
+    border: 1px solid #c7c7cc;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 18px;
+    z-index: 10;
+}
+.audio-toggle.muted {
+    opacity: 0.5;
+}
+.form-section {
+    padding: 20px;
+}
+.form-group {
+    margin-bottom: 20px;
+}
+label {
+    display: block;
+    font-size: 15px;
+    font-weight: 600;
+    color: #1c1c1e;
+    margin-bottom: 8px;
+}
+input, select, textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #c7c7cc;
+    border-radius: 8px;
+    font-size: 16px;
+    background: white;
+    color: #1c1c1e;
+}
+input:focus, select:focus, textarea:focus {
+    outline: none;
+    border-color: #007aff;
+}
+select {
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23007aff' d='M6 9L1 4h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 12px center;
+    padding-right: 35px;
+}
+.datetime-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+.btn-group {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 12px;
+    margin-top: 25px;
+}
+.btn-primary {
+    padding: 14px;
+    background: #34c759;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.btn-primary:hover {
+    background: #2da848;
+}
+.btn-secondary {
+    padding: 14px;
+    background: #ff3b30;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.btn-secondary:hover {
+    background: #d32f2f;
+}
+.task-section {
+    border-top: 1px solid #e5e5ea;
+    padding: 20px;
+}
+.task-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+.task-header h3 {
+    font-size: 18px;
+    color: #1c1c1e;
+}
+.task-count {
+    background: #007aff;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+}
+.task-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.task-item {
+    background: #f2f2f7;
+    padding: 15px;
+    border-radius: 10px;
+    border-left: 4px solid #007aff;
+    position: relative;
+}
+.task-item.overdue {
+    border-left-color: #ff3b30;
+    background: #ffebee;
+}
+.task-item.soon {
+    border-left-color: #ff9500;
+    background: #fff3e0;
+    animation: pulse 2s infinite;
+}
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.8; }
+}
+.task-computer {
+    font-weight: 600;
+    font-size: 16px;
+    color: #1c1c1e;
+    margin-bottom: 5px;
+}
+.task-meta {
+    font-size: 14px;
+    color: #666;
+    line-height: 1.4;
+}
+.time-remaining {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: #2c2c2e;
+    color: white;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 600;
+    font-family: monospace;
+}
+.task-actions {
+    margin-top: 10px;
+    display: flex;
+    gap: 8px;
+}
+.btn-small {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 6px;
+    font-size: 13px;
+    cursor: pointer;
+    font-weight: 500;
+}
+.btn-delete {
+    background: #ff3b30;
+    color: white;
+}
+.empty-state {
+    text-align: center;
+    padding: 40px 20px;
+    color: #8e8e93;
+}
+.empty-state-icon {
+    font-size: 48px;
+    margin-bottom: 10px;
+}
+.notification-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.8);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    padding: 20px;
+    backdrop-filter: blur(5px);
+}
+.notification-modal {
+    background: white;
+    padding: 40px;
+    border-radius: 20px;
+    text-align: center;
+    max-width: 400px;
+    width: 100%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    animation: modalPop 0.3s ease;
+}
+@keyframes modalPop {
+    0% { transform: scale(0.8); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+.notification-icon {
+    font-size: 80px;
+    margin-bottom: 20px;
+    animation: bellRing 0.5s ease infinite;
+}
+@keyframes bellRing {
+    0%, 100% { transform: rotate(0deg); }
+    25% { transform: rotate(-10deg); }
+    75% { transform: rotate(10deg); }
+}
+.notification-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1c1c1e;
+    margin-bottom: 15px;
+}
+.notification-text {
+    color: #666;
+    margin-bottom: 25px;
+    line-height: 1.5;
+    font-size: 16px;
+}
+.btn-dismiss {
+    background: #007aff;
+    color: white;
+    border: none;
+    padding: 14px 40px;
+    border-radius: 12px;
+    font-size: 17px;
+    font-weight: 600;
+    cursor: pointer;
+    width: 100%;
+}
+.hidden {
+    display: none !important;
+}
+</style>
+</head>
+<body>
+
+<button class="audio-toggle" id="audioToggle" onclick="toggleAudio()" title="Toggle sound">🔊</button>
+
+<div class="notification-overlay" id="notificationOverlay" onclick="dismissNotification()">
+    <div class="notification-modal" onclick="event.stopPropagation()">
+        <div class="notification-icon">🔔</div>
+        <div class="notification-title" id="notifTitle">Maintenance Due!</div>
+        <div class="notification-text" id="notifText">Task details here</div>
+        <button class="btn-dismiss" onclick="dismissNotification()">Dismiss</button>
+    </div>
+</div>
+
+<div class="container">
+    <div class="header">
+        <h1>🔧 Schedule Maintenance</h1>
+    </div>
+
+    <div class="status-bar" id="statusBar">
+        <div class="status-pill status-inactive" id="notifStatus">🔕 Off</div>
+        <div class="status-pill status-pending" id="timerStatus">⏱️ Waiting</div>
+    </div>
+
+    <button id="enableNotifBtn" class="enable-btn hidden" onclick="enableNotifications()">
+        🔔 Enable Notifications
+    </button>
+
+    <div class="form-section">
+        <form id="maintenanceForm">
+            <div class="form-group">
+                <label>Computer Unit</label>
+                <select id="computer" required>
+                    <option value="">Select Computer</option>
+                    <option>PC-01</option>
+                    <option>PC-02</option>
+                    <option>PC-03</option>
+                    <option>PC-04</option>
+                    <option>PC-05</option>
+                </select>
+            </div>
+
+            <div class="form-group datetime-row">
+                <div>
+                    <label>Date</label>
+                    <input type="date" id="date" required>
+                </div>
+                <div>
+                    <label>Time</label>
+                    <input type="time" id="time" required step="1">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Maintenance Type</label>
+                <select id="type" required>
+                    <option value="">Select Type</option>
+                    <option>Cleaning</option>
+                    <option>Software Update</option>
+                    <option>Hardware Check</option>
+                    <option>Troubleshooting</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Technician</label>
+                <input type="text" id="technician" placeholder="Enter name" required>
+            </div>
+
+            <div class="form-group">
+                <label>Notes (Optional)</label>
+                <textarea id="notes" rows="3" placeholder="Additional details..."></textarea>
+            </div>
+
+            <div class="btn-group">
+                <button type="submit" class="btn-primary">💾 Save Task</button>
+                <button type="button" class="btn-secondary" onclick="resetForm()">❌ Cancel</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="task-section">
+        <div class="task-header">
+            <h3>📋 Upcoming Tasks</h3>
+            <span class="task-count" id="taskCount">0</span>
+        </div>
+        <div class="task-list" id="taskList">
+            <div class="empty-state">
+                <div class="empty-state-icon">📭</div>
+                <div>No tasks scheduled</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Audio Context for precise beeping
+let audioContext = null;
+let audioEnabled = true;
+let nextTaskTimeout = null;
+let checkInterval = null;
+let swRegistration = null;
+
+// Initialize audio on first interaction
+function initAudio() {
+    if (!audioContext) {
+        audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    }
+}
+
+function playAlertSound() {
+    if (!audioEnabled || !audioContext) return;
+    
+    // Create oscillator for beep sound
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    // Double beep pattern
+    oscillator.frequency.setValueAtTime(880, audioContext.currentTime);
+    oscillator.frequency.setValueAtTime(440, audioContext.currentTime + 0.1);
+    oscillator.frequency.setValueAtTime(880, audioContext.currentTime + 0.2);
+    
+    gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+    
+    oscillator.start(audioContext.currentTime);
+    oscillator.stop(audioContext.currentTime + 0.5);
+    
+    // Second beep
+    setTimeout(() => {
+        const osc2 = audioContext.createOscillator();
+        const gain2 = audioContext.createGain();
+        osc2.connect(gain2);
+        gain2.connect(audioContext.destination);
+        osc2.frequency.setValueAtTime(880, audioContext.currentTime);
+        gain2.gain.setValueAtTime(0.3, audioContext.currentTime);
+        gain2.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+        osc2.start(audioContext.currentTime);
+        osc2.stop(audioContext.currentTime + 0.5);
+    }, 200);
+}
+
+function toggleAudio() {
+    audioEnabled = !audioEnabled;
+    const btn = document.getElementById('audioToggle');
+    btn.textContent = audioEnabled ? '🔊' : '🔇';
+    btn.classList.toggle('muted', !audioEnabled);
+    initAudio();
+}
+
+// Service Worker Registration
+if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js')
+        .then(reg => {
+            swRegistration = reg;
+            updateStatus();
+        })
+        .catch(err => {
+            console.error('SW registration failed:', err);
+        });
+}
+
+function updateStatus() {
+    const notifStatus = document.getElementById('notifStatus');
+    const timerStatus = document.getElementById('timerStatus');
+    const btn = document.getElementById('enableNotifBtn');
+    
+    if (!('Notification' in window)) {
+        notifStatus.textContent = '🔕 Not Supported';
+        notifStatus.className = 'status-pill status-inactive';
+        btn.classList.add('hidden');
+        return;
+    }
+    
+    if (Notification.permission === 'granted') {
+        notifStatus.textContent = '🔔 Active';
+        notifStatus.className = 'status-pill status-active';
+        timerStatus.textContent = '⏱️ Monitoring';
+        timerStatus.className = 'status-pill status-active';
+        btn.classList.add('hidden');
+        scheduleNextCheck();
+    } else if (Notification.permission === 'denied') {
+        notifStatus.textContent = '❌ Blocked';
+        notifStatus.className = 'status-pill status-inactive';
+        btn.classList.add('hidden');
+    } else {
+        notifStatus.textContent = '🔕 Off';
+        notifStatus.className = 'status-pill status-inactive';
+        timerStatus.textContent = '⏱️ Waiting';
+        btn.classList.remove('hidden');
+    }
+}
+
+async function enableNotifications() {
+    initAudio();
+    if (!('Notification' in window)) return;
+    
+    try {
+        const permission = await Notification.requestPermission();
+        updateStatus();
+        
+        if (permission === 'granted') {
+            new Notification('✅ Notifications Active', {
+                body: 'You will receive maintenance alerts with sound',
+                icon: 'https://cdn-icons-png.flaticon.com/512/3063/3063822.png'
+            });
+        }
+    } catch (err) {
+        console.error(err);
+    }
+}
+
+// Data Management
+let schedules = JSON.parse(localStorage.getItem("schedules")) || [];
+
+document.getElementById('date').min = new Date().toISOString().split('T')[0];
+
+document.getElementById("maintenanceForm").addEventListener("submit", function(e) {
+    e.preventDefault();
+    initAudio();
+    
+    const computer = document.getElementById("computer").value;
+    const date = document.getElementById("date").value;
+    const time = document.getElementById("time").value;
+    const type = document.getElementById("type").value;
+    const technician = document.getElementById("technician").value;
+    const notes = document.getElementById("notes").value;
+    
+    // Conflict Check
+    const conflict = schedules.find(s => s.computer === computer && s.date === date && s.time === time && !s.completed);
+    if (conflict) {
+        alert("⚠️ Schedule Conflict!\n\nThis computer already has maintenance at this time.");
+        return;
+    }
+    
+    const newTask = {
+        id: Date.now(),
+        computer,
+        date,
+        time,
+        type,
+        technician,
+        notes,
+        created: new Date().toISOString(),
+        completed: false,
+        notified: false
+    };
+    
+    schedules.push(newTask);
+    saveAndRefresh();
+    resetForm();
+    
+    if (Notification.permission === 'default') {
+        enableNotifications();
+    }
+    
+    // Visual feedback
+    const btn = e.target.querySelector('.btn-primary');
+    const originalText = btn.textContent;
+    btn.textContent = '✅ Saved!';
+    setTimeout(() => btn.textContent = originalText, 1500);
+});
+
+function saveAndRefresh() {
+    localStorage.setItem("schedules", JSON.stringify(schedules));
+    renderTasks();
+    syncWithServiceWorker();
+    scheduleNextCheck();
+}
+
+function resetForm() {
+    document.getElementById("maintenanceForm").reset();
+    document.getElementById('date').min = new Date().toISOString().split('T')[0];
+}
+
+function renderTasks() {
+    const container = document.getElementById("taskList");
+    const countBadge = document.getElementById("taskCount");
+    
+    countBadge.textContent = schedules.length;
+    
+    if (schedules.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <div class="empty-state-icon">📭</div>
+                <div>No tasks scheduled</div>
+            </div>`;
+        return;
+    }
+    
+    const sorted = [...schedules].sort((a, b) => {
+        if (a.completed !== b.completed) return a.completed ? 1 : -1;
+        return new Date(a.date + 'T' + a.time) - new Date(b.date + 'T' + b.time);
+    });
+    
+    const now = new Date();
+    
+    container.innerHTML = sorted.map(task => {
+        const taskDateTime = new Date(task.date + 'T' + task.time);
+        const diff = taskDateTime - now;
+        const isOverdue = diff < 0;
+        const isSoon = !task.completed && diff > 0 && diff < 3600000;
+        
+        let statusClass = '';
+        if (task.completed) statusClass = '';
+        else if (isOverdue) statusClass = 'overdue';
+        else if (isSoon) statusClass = 'soon';
+        
+        const timeRemaining = task.completed ? '' : getTimeRemaining(taskDateTime, now);
+        
+        return `
+            <div class="task-item ${statusClass}">
+                ${timeRemaining ? `<div class="time-remaining">${timeRemaining}</div>` : ''}
+                <div class="task-computer">${task.computer} ${task.notified ? '✓' : ''}</div>
+                <div class="task-meta">
+                    <strong>${task.type}</strong><br>
+                    📅 ${task.date} at ${task.time}<br>
+                    👤 ${task.technician}
+                    ${task.notes ? '<br>📝 ' + task.notes : ''}
+                </div>
+                <div class="task-actions">
+                    <button class="btn-small btn-delete" onclick="deleteTask(${task.id})">🗑️ Delete</button>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function getTimeRemaining(target, now) {
+    const diff = target - now;
+    if (diff < 0) return 'OVERDUE';
+    if (diff < 60000) return '< 1m';
+    if (diff < 3600000) return Math.floor(diff / 60000) + 'm';
+    if (diff < 86400000) return Math.floor(diff / 3600000) + 'h';
+    return Math.floor(diff / 86400000) + 'd';
+}
+
+function deleteTask(id) {
+    if (!confirm('Delete this task?')) return;
+    schedules = schedules.filter(s => s.id !== id);
+    saveAndRefresh();
+}
+
+// Precise Timing Engine
+function scheduleNextCheck() {
+    if (nextTaskTimeout) clearTimeout(nextTaskTimeout);
+    if (checkInterval) clearInterval(checkInterval);
+    
+    const now = new Date();
+    const pendingTasks = schedules.filter(s => !s.completed && !s.notified);
+    
+    if (pendingTasks.length === 0) {
+        document.getElementById('timerStatus').textContent = '⏱️ No tasks';
+        return;
+    }
+    
+    const nextTask = pendingTasks
+        .map(t => ({...t, dateTime: new Date(t.date + 'T' + t.time)}))
+        .filter(t => t.dateTime > now)
+        .sort((a, b) => a.dateTime - b.dateTime)[0];
+    
+    if (!nextTask) {
+        document.getElementById('timerStatus').textContent = '⏱️ All passed';
+        return;
+    }
+    
+    const msUntil = nextTask.dateTime - now;
+    const minutesUntil = Math.floor(msUntil / 60000);
+    
+    document.getElementById('timerStatus').textContent = 
+        minutesUntil < 1 ? '⏱️ < 1 min!' : `⏱️ ${minutesUntil}m`;
+    
+    // Schedule exact timeout
+    nextTaskTimeout = setTimeout(() => {
+        triggerNotification(nextTask);
+    }, msUntil);
+    
+    // Backup interval check every second
+    checkInterval = setInterval(() => {
+        const currentTime = new Date();
+        pendingTasks.forEach(task => {
+            const taskTime = new Date(task.date + 'T' + task.time);
+            const diff = taskTime - currentTime;
+            
+            if (diff <= 1000 && diff > -5000 && !task.notified) {
+                triggerNotification(task);
+            }
+        });
+        
+        // Update countdown
+        if (nextTask && !nextTask.notified) {
+            const remaining = nextTask.dateTime - currentTime;
+            const mins = Math.floor(remaining / 60000);
+            document.getElementById('timerStatus').textContent = 
+                mins < 1 ? '⏱️ < 1 min!' : `⏱️ ${mins}m`;
+        }
+    }, 1000);
+}
+
+function triggerNotification(task) {
+    if (task.notified || task.completed) return;
+    
+    task.notified = true;
+    saveAndRefresh();
+    
+    // Play sound immediately
+    playAlertSound();
+    
+    const title = `🔧 ${task.computer} - Maintenance Due!`;
+    const body = `${task.type} at ${task.time}\nTechnician: ${task.technician}`;
+    
+    // System notification
+    if (Notification.permission === 'granted') {
+        if (swRegistration) {
+            swRegistration.showNotification(title, {
+                body: body,
+                icon: 'https://cdn-icons-png.flaticon.com/512/3063/3063822.png',
+                badge: 'https://cdn-icons-png.flaticon.com/512/3063/3063822.png',
+                tag: String(task.id),
+                requireInteraction: true,
+                vibrate: [200, 100, 200]
+            });
+        } else {
+            new Notification(title, { 
+                body, 
+                icon: 'https://cdn-icons-png.flaticon.com/512/3063/3063822.png',
+                vibrate: [200, 100, 200]
+            });
+        }
+    }
+    
+    // Show in-app modal
+    showInAppNotification(task);
+    
+    // Reschedule for next task
+    setTimeout(scheduleNextCheck, 2000);
+}
+
+function showInAppNotification(task) {
+    document.getElementById('notifTitle').textContent = `${task.computer} - Maintenance Due!`;
+    document.getElementById('notifText').innerHTML = 
+        `<strong>${task.type}</strong><br>Time: ${task.time}<br>Technician: ${task.technician}${task.notes ? '<br><br>📝 ' + task.notes : ''}`;
+    document.getElementById('notificationOverlay').style.display = 'flex';
+    
+    // Auto-dismiss after 10 seconds
+    setTimeout(() => {
+        if (document.getElementById('notificationOverlay').style.display === 'flex') {
+            dismissNotification();
+        }
+    }, 10000);
+}
+
+function dismissNotification() {
+    document.getElementById('notificationOverlay').style.display = 'none';
+}
+
+function syncWithServiceWorker() {
+    if (navigator.serviceWorker.controller) {
+        navigator.serviceWorker.controller.postMessage({
+            type: 'SYNC_SCHEDULES',
+            schedules: schedules.filter(s => !s.completed && !s.notified)
+        });
+    }
+}
+
+// Listen for SW messages
+navigator.serviceWorker.addEventListener('message', event => {
+    if (event.data?.type === 'TASK_DUE') {
+        const task = schedules.find(t => t.id === event.data.taskId);
+        if (task) triggerNotification(task);
+    }
+});
+
+// Initialize
+document.addEventListener('DOMContentLoaded', () => {
+    renderTasks();
+    updateStatus();
+    
+    // Reschedule when tab becomes active
+    document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) scheduleNextCheck();
+    });
+});
+
+// Keep alive check every 30 seconds
+setInterval(() => {
+    if (!document.hidden) scheduleNextCheck();
+}, 30000);
+</script>
+</body>
+</html>
